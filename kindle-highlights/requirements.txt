@@ -1,0 +1,3 @@
+require_python_3
+beautifulsoup4
+requests
