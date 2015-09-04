@@ -38,7 +38,7 @@ for repo in gh.get_user().get_repos():
         cmds += [
             'cd {name}'.format(name = name),
             'git pull --rebase --prune',                 # Update to the most recent master
-            'git submodule update --init --recursive',   # Update submodules
+            #'git submodule update --init --recursive',   # Update submodules
             'git clean-branches',                        # Remove branches that have been deleted remotely
         ]
     # Doesn't exist yet, clone it
@@ -47,7 +47,7 @@ for repo in gh.get_user().get_repos():
         cmds += [
             'git clone {url}'.format(url = remote_path), # Download a new clean copy using repo name as directory
             'cd {name}'.format(name = name),
-            'git submodule update --init --recursive',   # Download and update submodules
+            #'git submodule update --init --recursive',   # Download and update submodules
         ]
 
     # Run each command specified above, bailing out if any failed (&&)

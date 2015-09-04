@@ -1,1 +1,2 @@
+pygithub # This apparently correctly installs something pygithub3 needs?
 pygithub3
