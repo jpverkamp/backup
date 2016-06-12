@@ -5,6 +5,7 @@ import gzip
 import os
 import pprint
 import requests
+import sys
 import time
 
 user_id = os.environ['USER_ID']
@@ -12,7 +13,11 @@ api_token = os.environ['API_TOKEN']
 
 def make_method(name, f):
     def new_f(path, **kwargs):
-        url = ('https://habitrpg.com/api/v2/' + path.lstrip('/')).format(**kwargs)
+        if path.startswith('https://'):
+            url = path
+        else:
+            url = 'https://habitica.com/api/v3/' + path.lstrip('/')
+        url = url.format(**kwargs)
         print(name, url)
 
         return f(url, headers = {
@@ -28,24 +33,33 @@ def backup(response, target):
         month = time.strftime('%m'),
         day = time.strftime('%d'),
         date = time.strftime('%Y%m%d')
-    )) + '.gz'
+    ))
     print(target)
 
+    # Assume json, fallback to text
+    try:
+        output = json.dumps(response.json()['data'], default = str, indent = 4, sort_keys = True)
+    except:
+        output = response.text
+
+    # Guarantee directory exists
     try:
         os.makedirs(os.path.dirname(target))
     except:
         pass
 
-    fout = gzip.open(target, 'wb')
-    try:
-        fout.write(bytes(json.dumps(response.json(), default = str, indent = 4, sort_keys = True), 'UTF-8'))
-    except:
-        fout.write(bytes(response.text, 'UTF-8'))
-    fout.close()
+    # Write uncompressed version (when debugging)
+    if '--debug' in sys.argv:
+        with open(target, 'w') as fout:
+            fout.write(output)
+
+    # Write compressed version
+    with gzip.open(target + '.gz', 'wb') as fout:
+        fout.write(output.encode('utf-8'))
 
 api_get = make_method('GET', requests.get)
 
-backup(api_get('/export/history'), '{year}/{date}/history.{date}.csv')
+backup(api_get('https://habitica.com/export/history.csv'), '{year}/{date}/history.{date}.csv')
 backup(api_get('/user'), '{year}/{date}/user.{date}.json')
-backup(api_get('/user/tasks'), '{year}/{date}/tasks.{date}.json')
+backup(api_get('/tasks/user'), '{year}/{date}/tasks.{date}.json')
 backup(api_get('/groups/party'), '{year}/{date}/party.{date}.json')
