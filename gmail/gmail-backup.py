@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import codecs
 import datetime
@@ -14,6 +12,9 @@ import time
 
 from pprint import pprint
 
+# https://stackoverflow.com/questions/25457441/reading-emails-with-imaplib-got-more-than-10000-bytes-error/25457500#25457500
+imaplib._MAXLINE = 1000000
+
 # --- Fetch any new messages ---
 
 username = os.environ['GMAIL_USERNAME']
@@ -21,9 +22,14 @@ password = os.environ['GMAIL_PASSWORD']
 imap_host = os.environ['GMAIL_HOST']
 imap_port = int(os.environ['GMAIL_PORT'])
 mailbox = os.environ['GMAIL_MAILBOX']
+output_folder = os.environ['GMAIL_BACKUP_DIR']
+search_filter = os.environ.get('GMAIL_BACKUP_FILTER', 'ALL')
 
-output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), output_folder)
 safe_chars =''.join(chr(c) if chr(c).isupper() or chr(c).islower() or chr(c).isdigit() else '_' for c in range(256))
+
+print('Backup directory: %s' % output_dir)
+print('Backup filter: %s' % search_filter)
 
 collapse = re.compile(r'_+')
 
@@ -48,8 +54,9 @@ count = int(count[0])
 print('%s messages to read' % count)
 
 print('Fetching ids')
-result, data = mail.uid('search', None, "ALL")
-ids = data[0].split()
+
+result, data = mail.uid('search', None, search_filter)
+ids = data[0].decode().split()
 
 id_file = open(os.path.join(output_dir, id_filename), 'a')
 
@@ -60,7 +67,7 @@ for id in ids:
     try:
         result, data = mail.uid('fetch', id, '(RFC822)')
         data = data[0][1]
-        msg = email.message_from_string(data)
+        msg = email.message_from_bytes(data)
 
         msg_from = msg['From']
         msg_subj = msg['Subject'] if msg['Subject'] else '(no subject)'
@@ -74,10 +81,10 @@ for id in ids:
 
         print('%s: %s' % (id, filename))
 
-        with open(os.path.join(dir, filename), 'w') as f:
+        with open(os.path.join(dir, filename), 'wb') as f:
             f.write(data)
 
-    except Exception, ex:
+    except Exception as ex:
         print('%s: %s' % (id, ex))
 
     id_file.write('%s\n' % id)
