@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
-import pygithub3
+import github
 import os
 
 # Load a list of repos we don't want to download / update
@@ -11,7 +11,7 @@ if os.path.exists('ignore.txt'):
             ignored.add(line.strip())
 
 # Connect to github (if you have MFA, your password must be a token)
-gh = pygithub3.Github(os.environ['GITHUB_USERNAME'], os.environ['GITHUB_PASSWORD'])
+gh = github.Github(os.environ['GITHUB_USERNAME'], os.environ['GITHUB_PASSWORD'])
 
 # Loop over repos for the specified user, this will include their organization's repos as well
 for repo in gh.get_user().get_repos():
@@ -24,7 +24,7 @@ for repo in gh.get_user().get_repos():
     print(name_with_owner)
 
     # Check if the repo is in the ignore list
-    if name in ignored or name_with_owner in ignored:
+    if owner in ignored or name in ignored or name_with_owner in ignored:
         print('... skipping')
         continue
 
@@ -37,9 +37,12 @@ for repo in gh.get_user().get_repos():
         print('... updating')
         cmds += [
             'cd {name}'.format(name = name),
-            'git pull --rebase --prune',                 # Update to the most recent master
+            'git fetch --all',
+            'git reset --hard origin/master',
+            'git pull origin master',
+            #'git pull --rebase --prune',                 # Update to the most recent master
             #'git submodule update --init --recursive',   # Update submodules
-            'git clean-branches',                        # Remove branches that have been deleted remotely
+            #'git clean-branches',                        # Remove branches that have been deleted remotely
         ]
     # Doesn't exist yet, clone it
     else:
