@@ -101,6 +101,8 @@ for shelf in soup.find_all('user_shelf'):
                 'started': safe_get(review, 'started_at', dateutil.parser.parse),
                 'finished': safe_get(review, 'read_at', dateutil.parser.parse),
                 'review': safe_get(review, 'body'),
+                'pages': safe_get(review, 'num_pages', int),
+                'publication_year': safe_get(review, 'publication_year', int),
             }
 
             shelf_data['books'].append(book_data)
